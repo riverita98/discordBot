@@ -1,5 +1,4 @@
-var express = require('express');
-var bodyParser = require('body-parser');
+const service = require('./service');
 
 const Discord = require("discord.js");
 const config = require("./config.json");
@@ -26,35 +25,41 @@ client.on("message", async function (message) {
     const args = commandBody.split(' ');
     const command = args.shift().toLowerCase();
 
-    if (command === "ping") {
-        const timeTaken = Date.now() - message.createdTimestamp;
-        message.reply();
+    if (command === "enable") {
+        service.remove(message.author.id);
+        console.log("usuario activado");
+    }
+    else if (command ==="disable"){
+        service.insert(message.author.id);
+        console.log("usuario desactivado");
+
     }
 
-    if (command === "event") {
+    else if (command === "event") {
 
         console.log("Enviando MD sobre evento");
 
-        const timeTaken = Date.now() - message.createdTimestamp;
+
         message.reply(toString(args));
 
         message.reply("ENVIANDO NOTIFICACIONES SOBRE EVENTO");
         message.guild.members.fetch()
-            .then(e => {
-                console.log(e);
-                const memberList = e.toJSON();
-                memberList.forEach(member => {
-                    client.users.fetch(member['userID']).then(user => {
+            .then(async e => {
 
+                const memberList = e.toJSON();
+                memberList.forEach(async member => {
+                  await  client.users.fetch(member['userID']).then(async user => {
                         if (member['displayName'] != "GypsyBot" && member['displayName'] != "BoobBot™"
                             && member['displayName'] != "Groovy" && member['displayName'] != "Casino") {
-                            console.log(member['displayName'] + "-" + member['userID']);
-
-                            user.send(toString(args));
+                            const res = await service.get(member['userID']);
+                            if (res==false) {
+                                user.send(toString(args)).then(console.log(`MENSAJE ENVIADO A ${member['displayName']}:\n `)).catch(e => { console.log(`ERROR AL ENVIAR MENSAJE A ${member['displayName']}:\n ${e}`) });
+                            }
                         }
 
-                    })
+                    }).catch(console.error);
                 });
+
                 message.reply("NOTIFICACIONES DE EVENTO ENVIADAS CORRECTAMENTE");
             })
             .catch(console.error);
